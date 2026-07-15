@@ -1,0 +1,357 @@
+/*
+====================================================================
+  WEATHER ANALYTICS DASHBOARD PRO — DAX MEASURE LIBRARY
+  Paste these into Power BI Desktop as a "_Measures" table
+  (Modeling > New Table > = ROW("_Measures", BLANK()) )
+  then create each measure below inside that table.
+====================================================================
+*/
+
+------------------------------------------------------------
+-- 1. CORE TEMPERATURE MEASURES
+------------------------------------------------------------
+
+Current Temperature =
+VAR LastDate = MAX ( Weather[Date] )
+RETURN
+CALCULATE (
+    AVERAGE ( Weather[Temperature_C] ),
+    Weather[Date] = LastDate
+)
+
+Average Temperature =
+AVERAGE ( Weather[Temperature_C] )
+
+Maximum Temperature =
+MAX ( Weather[Temperature_C] )
+
+Minimum Temperature =
+MIN ( Weather[Temperature_C] )
+
+Feels Like =
+AVERAGE ( Weather[FeelsLike_C] )
+
+Temperature Difference =
+[Maximum Temperature] - [Minimum Temperature]
+
+Heat Index =
+// Simplified heat index approximation (Celsius, valid roughly >26C)
+VAR T = AVERAGE ( Weather[Temperature_C] )
+VAR RH = AVERAGE ( Weather[Humidity_pct] )
+RETURN
+IF (
+    T >= 26,
+    -8.784695
+        + 1.61139411 * T
+        + 2.338549 * RH
+        - 0.14611605 * T * RH
+        - 0.012308094 * T ^ 2
+        - 0.016424828 * RH ^ 2
+        + 0.002211732 * T ^ 2 * RH
+        + 0.00072546 * T * RH ^ 2
+        - 0.000003582 * T ^ 2 * RH ^ 2,
+    T
+)
+
+------------------------------------------------------------
+-- 2. ATMOSPHERIC / CONDITION MEASURES
+------------------------------------------------------------
+
+Humidity =
+AVERAGE ( Weather[Humidity_pct] )
+
+Average Wind =
+AVERAGE ( Weather[WindSpeed_kmh] )
+
+Pressure =
+AVERAGE ( Weather[Pressure_mb] )
+
+Visibility =
+AVERAGE ( Weather[Visibility_km] )
+
+Cloud Cover =
+AVERAGE ( Weather[CloudCover_pct] )
+
+UV Index =
+AVERAGE ( Weather[UVIndex] )
+
+Precipitation =
+SUM ( Weather[Precipitation_mm] )
+
+------------------------------------------------------------
+-- 3. FORECAST MEASURES
+------------------------------------------------------------
+
+Forecast Average =
+AVERAGE ( Forecast[AvgTemp_C] )
+
+Forecast Max =
+MAX ( Forecast[MaxTemp_C] )
+
+Forecast Min =
+MIN ( Forecast[MinTemp_C] )
+
+Rain Probability =
+AVERAGE ( Forecast[RainProbability_pct] )
+
+Sunrise =
+// Returns earliest sunrise time in current filter context (text hh:mm)
+CALCULATE (
+    SELECTEDVALUE ( Forecast[Sunrise] ),
+    Forecast[DayOffset] = 1
+)
+
+Sunset =
+CALCULATE (
+    SELECTEDVALUE ( Forecast[Sunset] ),
+    Forecast[DayOffset] = 1
+)
+
+Day Length (hrs) =
+VAR SunriseText = [Sunrise]
+VAR SunsetText  = [Sunset]
+VAR SunriseTime = TIMEVALUE ( SunriseText )
+VAR SunsetTime  = TIMEVALUE ( SunsetText )
+RETURN
+DATEDIFF ( SunriseTime, SunsetTime, MINUTE ) / 60
+
+Golden Hour Start =
+// Approx: 1 hour before sunset
+VAR SunsetTime = TIMEVALUE ( [Sunset] )
+RETURN
+SunsetTime - TIME ( 1, 0, 0 )
+
+------------------------------------------------------------
+-- 4. TREND / ROLLING MEASURES
+------------------------------------------------------------
+
+Rolling Average (7D) =
+AVERAGEX (
+    DATESINPERIOD ( Calendar[Date], MAX ( Calendar[Date] ), -7, DAY ),
+    CALCULATE ( AVERAGE ( Weather[Temperature_C] ) )
+)
+
+Trend % =
+VAR CurrentAvg =
+    CALCULATE (
+        AVERAGE ( Weather[Temperature_C] ),
+        DATESINPERIOD ( Calendar[Date], MAX ( Calendar[Date] ), -7, DAY )
+    )
+VAR PriorAvg =
+    CALCULATE (
+        AVERAGE ( Weather[Temperature_C] ),
+        DATESINPERIOD (
+            Calendar[Date],
+            DATEADD ( MAX ( Calendar[Date] ), -7, DAY ),
+            -7,
+            DAY
+        )
+    )
+RETURN
+DIVIDE ( CurrentAvg - PriorAvg, PriorAvg )
+
+MoM Temperature Change =
+VAR CurrentMonth = AVERAGE ( Weather[Temperature_C] )
+VAR PriorMonth =
+    CALCULATE (
+        AVERAGE ( Weather[Temperature_C] ),
+        DATEADD ( Calendar[Date], -1, MONTH )
+    )
+RETURN
+CurrentMonth - PriorMonth
+
+------------------------------------------------------------
+-- 5. AIR QUALITY MEASURES
+------------------------------------------------------------
+
+Average AQI =
+AVERAGE ( AirQuality[AQI] )
+
+PM2.5 =
+AVERAGE ( AirQuality[PM2_5] )
+
+PM10 =
+AVERAGE ( AirQuality[PM10] )
+
+CO Level =
+AVERAGE ( AirQuality[CO_mg_m3] )
+
+NO2 Level =
+AVERAGE ( AirQuality[NO2_ug_m3] )
+
+SO2 Level =
+AVERAGE ( AirQuality[SO2_ug_m3] )
+
+O3 Level =
+AVERAGE ( AirQuality[O3_ug_m3] )
+
+AQI Category =
+VAR A = [Average AQI]
+RETURN
+SWITCH (
+    TRUE (),
+    A <= 50, "Good",
+    A <= 100, "Moderate",
+    A <= 200, "Poor",
+    A <= 300, "Unhealthy",
+    "Hazardous"
+)
+
+------------------------------------------------------------
+-- 6. DYNAMIC COLOR / KPI FORMATTING MEASURES
+--    Bind these to Conditional Formatting -> Font Color
+--    (use "Field Value" mode) on cards / KPI visuals.
+------------------------------------------------------------
+
+AQI Color =
+VAR A = [Average AQI]
+RETURN
+SWITCH (
+    TRUE (),
+    A <= 50, "#34D399",     -- Good (green)
+    A <= 100, "#FBBF24",    -- Moderate (yellow)
+    A <= 200, "#F97316",    -- Poor (orange)
+    A <= 300, "#F87171",    -- Unhealthy (red)
+    "#A21CAF"               -- Hazardous (purple)
+)
+
+Temperature KPI Color =
+VAR T = [Current Temperature]
+RETURN
+SWITCH (
+    TRUE (),
+    T >= 40, "#F87171",
+    T >= 30, "#FBBF24",
+    T >= 15, "#34D399",
+    "#38BDF8"
+)
+
+Rain Probability Color =
+VAR R = [Rain Probability]
+RETURN
+SWITCH (
+    TRUE (),
+    R >= 70, "#4F7CFF",
+    R >= 40, "#8A5CF6",
+    R >= 15, "#22D3EE",
+    "#374151"
+)
+
+Trend Arrow =
+VAR T = [Trend %]
+RETURN
+SWITCH (
+    TRUE (),
+    T > 0.02, "▲",
+    T < -0.02, "▼",
+    "▬"
+)
+
+------------------------------------------------------------
+-- 6b. PER-POLLUTANT STATUS DOT COLORS
+--     Bind each to a small circle/shape card next to PM10, PM2.5,
+--     O3, NO2, SO2 and CO tiles (as seen on the Air Quality
+--     Overview page) via Conditional Formatting -> Field Value.
+--     Thresholds follow simplified CPCB/EPA-style breakpoints.
+------------------------------------------------------------
+
+PM10 Status Color =
+VAR V = [PM10]
+RETURN SWITCH ( TRUE (), V <= 54, "#34D399", V <= 154, "#FBBF24", V <= 254, "#F97316", "#F87171" )
+
+PM2.5 Status Color =
+VAR V = [PM2.5]
+RETURN SWITCH ( TRUE (), V <= 12, "#34D399", V <= 35, "#FBBF24", V <= 55, "#F97316", "#F87171" )
+
+O3 Status Color =
+VAR V = [O3 Level]
+RETURN SWITCH ( TRUE (), V <= 54, "#34D399", V <= 70, "#FBBF24", V <= 85, "#F97316", "#F87171" )
+
+NO2 Status Color =
+VAR V = [NO2 Level]
+RETURN SWITCH ( TRUE (), V <= 53, "#34D399", V <= 100, "#FBBF24", V <= 360, "#F97316", "#F87171" )
+
+SO2 Status Color =
+VAR V = [SO2 Level]
+RETURN SWITCH ( TRUE (), V <= 35, "#34D399", V <= 75, "#FBBF24", V <= 185, "#F97316", "#F87171" )
+
+CO Status Color =
+VAR V = [CO Level]
+RETURN SWITCH ( TRUE (), V <= 4.4, "#34D399", V <= 9.4, "#FBBF24", V <= 12.4, "#F97316", "#F87171" )
+
+Air Quality Summary Text =
+// Drives the "Air is clean and healthy" style caption under the gauge
+VAR A = [Average AQI]
+RETURN
+SWITCH (
+    TRUE (),
+    A <= 50, "Air is clean and healthy",
+    A <= 100, "Air quality is acceptable",
+    A <= 200, "Sensitive groups should limit outdoor exertion",
+    A <= 300, "Air quality is unhealthy",
+    "Air quality is hazardous"
+)
+
+------------------------------------------------------------
+-- 7. COMPOSITE / SCORE MEASURES
+------------------------------------------------------------
+
+Weather Score =
+// 0-100 composite comfort score: rewards mild temp, low humidity,
+// low AQI, low rain probability, high visibility.
+VAR TempScore = 100 - ABS ( [Current Temperature] - 23 ) * 3
+VAR HumidityScore = 100 - ABS ( [Humidity] - 45 )
+VAR AQIScore = 100 - MIN ( [Average AQI], 100 )
+VAR RainScore = 100 - [Rain Probability]
+VAR VisibilityScore = MIN ( [Visibility] * 10, 100 )
+RETURN
+ROUND (
+    ( TempScore * 0.30
+    + HumidityScore * 0.20
+    + AQIScore * 0.25
+    + RainScore * 0.15
+    + VisibilityScore * 0.10 ),
+    0
+)
+
+Weather Score Category =
+VAR S = [Weather Score]
+RETURN
+SWITCH (
+    TRUE (),
+    S >= 80, "Excellent",
+    S >= 60, "Good",
+    S >= 40, "Fair",
+    S >= 20, "Poor",
+    "Very Poor"
+)
+
+Selected City Name =
+IF (
+    HASONEVALUE ( City[City] ),
+    SELECTEDVALUE ( City[City] ),
+    "Multiple Cities"
+)
+
+------------------------------------------------------------
+-- 8. UTILITY / TOOLTIP MEASURES
+------------------------------------------------------------
+
+Last Updated =
+FORMAT ( MAX ( Weather[Date] ), "DD MMM YYYY" )
+
+Temp Unit Toggle Label =
+// Pair with a disconnected "Unit" parameter table (C / F)
+SELECTEDVALUE ( 'Unit Parameter'[Unit], "C" )
+
+Display Temperature =
+VAR Unit = [Temp Unit Toggle Label]
+VAR TempC = [Current Temperature]
+RETURN
+IF ( Unit = "F", TempC * 9 / 5 + 32, TempC )
+
+/*
+====================================================================
+  END OF MEASURE LIBRARY — 40+ production DAX measures
+====================================================================
+*/

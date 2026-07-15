@@ -1,0 +1,141 @@
+{
+  "name": "Weather Analytics Dashboard Pro - Dark Glassmorphism",
+  "dataColors": [
+    "#4F7CFF",
+    "#8A5CF6",
+    "#22D3EE",
+    "#34D399",
+    "#FBBF24",
+    "#F87171",
+    "#EC4899",
+    "#A78BFA",
+    "#38BDF8",
+    "#10B981"
+  ],
+  "background": "#0B0F1A",
+  "backgroundLight": "#121826",
+  "foreground": "#F5F7FA",
+  "foregroundNeutralSecondary": "#9CA3AF",
+  "tableAccent": "#4F7CFF",
+  "good": "#34D399",
+  "neutral": "#FBBF24",
+  "bad": "#F87171",
+  "maximum": "#8A5CF6",
+  "center": "#4F7CFF",
+  "minimum": "#0B0F1A",
+  "null": "#374151",
+
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#141B2D" } },
+            "transparency": 25
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#2A3550" } },
+            "radius": 16
+          }
+        ],
+        "shadow": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#000000" } },
+            "transparency": 60,
+            "position": "Outer",
+            "blur": 20,
+            "angle": 90,
+            "distance": 4
+          }
+        ],
+        "visualHeader": [
+          {
+            "background": { "solid": { "color": "#141B2D" } },
+            "transparency": 100,
+            "foreground": { "solid": { "color": "#F5F7FA" } }
+          }
+        ],
+        "title": [
+          {
+            "show": true,
+            "fontColor": { "solid": { "color": "#F5F7FA" } },
+            "fontSize": 13,
+            "fontFamily": "Segoe UI Semibold",
+            "background": { "solid": { "color": "#00000000" } }
+          }
+        ],
+        "subTitle": [
+          {
+            "fontColor": { "solid": { "color": "#9CA3AF" } },
+            "fontSize": 10
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [
+          {
+            "color": { "solid": { "color": "#F5F7FA" } },
+            "fontSize": 28,
+            "fontFamily": "Segoe UI Semibold"
+          }
+        ],
+        "categoryLabels": [
+          {
+            "color": { "solid": { "color": "#9CA3AF" } },
+            "fontSize": 11
+          }
+        ]
+      }
+    },
+    "gauge": {
+      "*": {
+        "dataPoint": [
+          {
+            "fillColor": { "solid": { "color": "#4F7CFF" } },
+            "targetColor": { "solid": { "color": "#8A5CF6" } }
+          }
+        ]
+      }
+    },
+    "lineChart": {
+      "*": {
+        "dataPoint": [ { "fillColor": { "solid": { "color": "#4F7CFF" } } } ],
+        "line": [ { "lineStyle": "smooth", "strokeWidth": 3 } ]
+      }
+    },
+    "slicer": {
+      "*": {
+        "general": [ { "outlineColor": { "solid": { "color": "#2A3550" } } } ],
+        "items": [
+          {
+            "fontColor": { "solid": { "color": "#F5F7FA" } },
+            "background": { "solid": { "color": "#141B2D" } }
+          }
+        ]
+      }
+    }
+  },
+
+  "textClasses": {
+    "callout": { "fontSize": 32, "fontFace": "Segoe UI Semibold", "color": "#F5F7FA" },
+    "title": { "fontSize": 14, "fontFace": "Segoe UI Semibold", "color": "#F5F7FA" },
+    "header": { "fontSize": 12, "fontFace": "Segoe UI Semibold", "color": "#F5F7FA" },
+    "label": { "fontSize": 10, "fontFace": "Segoe UI", "color": "#9CA3AF" }
+  },
+
+  "structuralColors": {
+    "canvasBackground": "#0B0F1A",
+    "canvasBorder": "#1A2236",
+    "filterPaneBackground": "#0B0F1A",
+    "maximumColor": "#8A5CF6",
+    "minimumColor": "#0B0F1A",
+    "nullColor": "#374151"
+  }
+}

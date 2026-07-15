@@ -1,0 +1,192 @@
+/*
+====================================================================
+  WEATHER ANALYTICS DASHBOARD PRO — POWER QUERY (M) SCRIPTS
+  In Power BI Desktop: Home > Transform Data > New Blank Query >
+  Advanced Editor > paste the relevant block below.
+  Update the file path parameter at the top of each query to point
+  at your local /Data folder, or wire to WeatherAPI.com directly
+  (see "AQI - Web API version" at the bottom).
+====================================================================
+*/
+
+------------------------------------------------------------
+-- 0. PARAMETER: DataFolderPath (Text parameter)
+------------------------------------------------------------
+// Modeling > Manage Parameters > New Parameter
+// Name: DataFolderPath   Type: Text   Current Value: "C:\Weather-Analytics-Dashboard\Data\"
+
+------------------------------------------------------------
+-- 1. QUERY: City
+------------------------------------------------------------
+let
+    Source = Csv.Document(
+        File.Contents(DataFolderPath & "City.csv"),
+        [Delimiter=",", Columns=8, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    PromoteHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    ChangedType = Table.TransformColumnTypes(PromoteHeaders,{
+        {"CityID", Int64.Type}, {"City", type text}, {"State", type text},
+        {"Latitude", type number}, {"Longitude", type number},
+        {"Timezone", type text}, {"BaseTemp", Int64.Type}, {"Region", type text}
+    }),
+    RemovedErrors = Table.RemoveRowsWithErrors(ChangedType),
+    RenamedCity = Table.RenameColumns(RemovedErrors, {{"City", "City Name"}})
+in
+    RenamedCity
+
+------------------------------------------------------------
+-- 2. QUERY: Calendar
+------------------------------------------------------------
+let
+    Source = Csv.Document(
+        File.Contents(DataFolderPath & "Calendar.csv"),
+        [Delimiter=",", Columns=11, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    PromoteHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    ChangedType = Table.TransformColumnTypes(PromoteHeaders,{
+        {"Date", type date}, {"Day", Int64.Type}, {"Month", Int64.Type},
+        {"MonthName", type text}, {"Quarter", type text}, {"Year", Int64.Type},
+        {"WeekdayName", type text}, {"WeekdayNum", Int64.Type},
+        {"IsWeekend", type logical}, {"WeekOfYear", Int64.Type}, {"Season", type text}
+    }),
+    SortedRows = Table.Sort(ChangedType,{{"Date", Order.Ascending}}),
+    MarkAsDateTable = SortedRows
+    // After load: right click table > "Mark as Date Table" using [Date]
+in
+    MarkAsDateTable
+
+------------------------------------------------------------
+-- 3. QUERY: Weather  (fact table, handles nulls + type fixes)
+------------------------------------------------------------
+let
+    Source = Csv.Document(
+        File.Contents(DataFolderPath & "Weather.csv"),
+        [Delimiter=",", Columns=12, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    PromoteHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    ChangedType = Table.TransformColumnTypes(PromoteHeaders,{
+        {"WeatherID", Int64.Type}, {"CityID", Int64.Type}, {"Date", type date},
+        {"Temperature_C", type number}, {"FeelsLike_C", type number},
+        {"Humidity_pct", Int64.Type}, {"WindSpeed_kmh", type number},
+        {"Pressure_mb", type number}, {"Visibility_km", type number},
+        {"CloudCover_pct", Int64.Type}, {"Precipitation_mm", type number},
+        {"UVIndex", Int64.Type}, {"Condition", type text}
+    }),
+    // Handle nulls: replace missing numeric readings with column median-safe defaults
+    ReplacedHumidityNulls = Table.ReplaceValue(ChangedType, null, 45, Replacer.ReplaceValue, {"Humidity_pct"}),
+    ReplacedWindNulls = Table.ReplaceValue(ReplacedHumidityNulls, null, 8, Replacer.ReplaceValue, {"WindSpeed_kmh"}),
+    ReplacedConditionNulls = Table.ReplaceValue(ReplacedWindNulls, null, "Clear", Replacer.ReplaceValue, {"Condition"}),
+    RemovedDupes = Table.Distinct(ReplacedConditionNulls, {"CityID", "Date"}),
+    AddedFeelsDiff = Table.AddColumn(RemovedDupes, "FeelsLike Diff", each [FeelsLike_C] - [Temperature_C], type number),
+    AddedIsRainy = Table.AddColumn(AddedFeelsDiff, "IsRainy", each List.Contains({"Light Rain","Heavy Rain","Thunderstorm"}, [Condition]), type logical)
+in
+    AddedIsRainy
+
+------------------------------------------------------------
+-- 4. QUERY: Forecast
+------------------------------------------------------------
+let
+    Source = Csv.Document(
+        File.Contents(DataFolderPath & "Forecast.csv"),
+        [Delimiter=",", Columns=10, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    PromoteHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    ChangedType = Table.TransformColumnTypes(PromoteHeaders,{
+        {"ForecastID", Int64.Type}, {"CityID", Int64.Type}, {"ForecastDate", type date},
+        {"DayOffset", Int64.Type}, {"MaxTemp_C", type number}, {"MinTemp_C", type number},
+        {"AvgTemp_C", type number}, {"RainProbability_pct", Int64.Type},
+        {"Condition", type text}, {"Sunrise", type text}, {"Sunset", type text}
+    }),
+    FilteredNext7 = Table.SelectRows(ChangedType, each [DayOffset] <= 7),
+    AddedTempRange = Table.AddColumn(FilteredNext7, "Temp Range", each [MaxTemp_C] - [MinTemp_C], type number)
+in
+    AddedTempRange
+
+------------------------------------------------------------
+-- 5. QUERY: AirQuality
+------------------------------------------------------------
+let
+    Source = Csv.Document(
+        File.Contents(DataFolderPath & "AQI.csv"),
+        [Delimiter=",", Columns=11, Encoding=65001, QuoteStyle=QuoteStyle.None]
+    ),
+    PromoteHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    ChangedType = Table.TransformColumnTypes(PromoteHeaders,{
+        {"AQIID", Int64.Type}, {"CityID", Int64.Type}, {"Date", type date},
+        {"AQI", Int64.Type}, {"AQICategory", type text}, {"PM2_5", type number},
+        {"PM10", type number}, {"CO_mg_m3", type number}, {"NO2_ug_m3", type number},
+        {"SO2_ug_m3", type number}, {"O3_ug_m3", type number}
+    }),
+    ReplacedAQINulls = Table.ReplaceValue(ChangedType, null, 50, Replacer.ReplaceValue, {"AQI"}),
+    AddedSeverityRank = Table.AddColumn(ReplacedAQINulls, "SeverityRank", each
+        if [AQI] <= 50 then 1
+        else if [AQI] <= 100 then 2
+        else if [AQI] <= 200 then 3
+        else if [AQI] <= 300 then 4
+        else 5, Int64.Type)
+in
+    AddedSeverityRank
+
+------------------------------------------------------------
+-- 6. MERGE EXAMPLE: Weather + City (bring Region/City Name onto fact table
+--    for use in tooltips without an extra relationship hop)
+------------------------------------------------------------
+let
+    Source = Weather,
+    MergedWithCity = Table.NestedJoin(Source, {"CityID"}, City, {"CityID"}, "CityDetails", JoinKind.LeftOuter),
+    ExpandedCity = Table.ExpandTableColumn(MergedWithCity, "CityDetails", {"City Name", "Region"}, {"City Name", "Region"})
+in
+    ExpandedCity
+
+------------------------------------------------------------
+-- 7. APPEND EXAMPLE: Combine Weather (actuals) + Forecast (future)
+--    into a single "WeatherTimeline" query for continuous line charts
+------------------------------------------------------------
+let
+    ActualsShaped = Table.SelectColumns(Weather, {"CityID", "Date", "Temperature_C"}),
+    ActualsRenamed = Table.RenameColumns(ActualsShaped, {{"Temperature_C", "Temp_C"}}),
+    ActualsTagged = Table.AddColumn(ActualsRenamed, "DataType", each "Actual", type text),
+
+    ForecastShaped = Table.SelectColumns(Forecast, {"CityID", "ForecastDate", "AvgTemp_C"}),
+    ForecastRenamed = Table.RenameColumns(ForecastShaped, {{"ForecastDate", "Date"}, {"AvgTemp_C", "Temp_C"}}),
+    ForecastTagged = Table.AddColumn(ForecastRenamed, "DataType", each "Forecast", type text),
+
+    Combined = Table.Combine({ActualsTagged, ForecastTagged}),
+    SortedCombined = Table.Sort(Combined, {{"CityID", Order.Ascending}, {"Date", Order.Ascending}})
+in
+    SortedCombined
+
+------------------------------------------------------------
+-- 8. AQI - WEB API VERSION (optional live-data alternative)
+--    Requires a WeatherAPI.com key stored as a parameter "APIKey"
+------------------------------------------------------------
+let
+    BaseUrl = "https://api.weatherapi.com/v1/forecast.json",
+    Cities = City,
+    GetOneCity = (cityName as text) as record =>
+        let
+            Url = BaseUrl & "?key=" & APIKey & "&q=" & Uri.EscapeDataString(cityName) & "&days=1&aqi=yes",
+            Response = Json.Document(Web.Contents(Url)),
+            Current = Response[current],
+            AQ = Current[air_quality]
+        in
+            [
+                City = cityName,
+                Temp_C = Current[temp_c],
+                Condition = Current[condition][text],
+                AQI = AQ[#"us-epa-index"],
+                PM2_5 = AQ[pm2_5],
+                PM10 = AQ[pm10]
+            ],
+    AddedResults = Table.AddColumn(Cities, "APIResult", each GetOneCity([City Name])),
+    ExpandedResults = Table.ExpandRecordColumn(AddedResults, "APIResult",
+        {"Temp_C", "Condition", "AQI", "PM2_5", "PM10"},
+        {"Live Temp_C", "Live Condition", "Live AQI", "Live PM2_5", "Live PM10"})
+in
+    ExpandedResults
+
+/*
+====================================================================
+  END OF POWER QUERY SCRIPTS
+====================================================================
+*/

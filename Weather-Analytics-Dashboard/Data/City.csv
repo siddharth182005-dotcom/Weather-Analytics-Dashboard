@@ -1,0 +1,11 @@
+CityID,City,State,Latitude,Longitude,Timezone,BaseTemp,Region
+1,Delhi,Delhi,28.6139,77.209,Asia/Kolkata,26,North
+2,Mumbai,Maharashtra,19.076,72.8777,Asia/Kolkata,28,West
+3,Bangalore,Karnataka,12.9716,77.5946,Asia/Kolkata,23,South
+4,Chennai,Tamil Nadu,13.0827,80.2707,Asia/Kolkata,29,South
+5,Kolkata,West Bengal,22.5726,88.3639,Asia/Kolkata,27,East
+6,Hyderabad,Telangana,17.385,78.4867,Asia/Kolkata,25,South
+7,Pune,Maharashtra,18.5204,73.8567,Asia/Kolkata,24,West
+8,Jaipur,Rajasthan,26.9124,75.7873,Asia/Kolkata,27,North
+9,Lucknow,Uttar Pradesh,26.8467,80.9462,Asia/Kolkata,26,North
+10,Ahmedabad,Gujarat,23.0225,72.5714,Asia/Kolkata,28,West

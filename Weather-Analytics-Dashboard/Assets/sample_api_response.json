@@ -1,0 +1,90 @@
+{
+  "location": {
+    "name": "Delhi",
+    "region": "Delhi",
+    "country": "India",
+    "lat": 28.61,
+    "lon": 77.21,
+    "tz_id": "Asia/Kolkata",
+    "localtime": "2026-07-15 06:40"
+  },
+  "current": {
+    "last_updated": "2026-07-15 06:40",
+    "temp_c": 28.2,
+    "feelslike_c": 31.0,
+    "condition": {
+      "text": "Partly Cloudy",
+      "icon": "//cdn.weatherapi.com/weather/64x64/day/116.png",
+      "code": 1003
+    },
+    "wind_kph": 5.6,
+    "wind_dir": "NW",
+    "pressure_mb": 1011.8,
+    "precip_mm": 0,
+    "humidity": 59,
+    "cloud": 51,
+    "uv": 3,
+    "vis_km": 13.4
+  },
+  "air_quality": {
+    "co": 0.46,
+    "no2": 35.5,
+    "o3": 15.3,
+    "so2": 13.1,
+    "pm2_5": 56.5,
+    "pm10": 94.6,
+    "us-epa-index": 114
+  },
+  "forecast": {
+    "forecastday": [
+      {
+        "date": "2026-07-15",
+        "day": {
+          "maxtemp_c": 30.9,
+          "mintemp_c": 24.8,
+          "avgtemp_c": 27.9,
+          "daily_chance_of_rain": 92,
+          "condition": {
+            "text": "Cloudy"
+          }
+        },
+        "astro": {
+          "sunrise": "05:30 AM",
+          "sunset": "18:41 PM"
+        }
+      },
+      {
+        "date": "2026-07-16",
+        "day": {
+          "maxtemp_c": 28.8,
+          "mintemp_c": 22.8,
+          "avgtemp_c": 25.8,
+          "daily_chance_of_rain": 12,
+          "condition": {
+            "text": "Thunderstorm"
+          }
+        },
+        "astro": {
+          "sunrise": "05:28 AM",
+          "sunset": "18:34 PM"
+        }
+      },
+      {
+        "date": "2026-07-17",
+        "day": {
+          "maxtemp_c": 30.3,
+          "mintemp_c": 22.1,
+          "avgtemp_c": 26.2,
+          "daily_chance_of_rain": 33,
+          "condition": {
+            "text": "Heavy Rain"
+          }
+        },
+        "astro": {
+          "sunrise": "05:44 AM",
+          "sunset": "18:38 PM"
+        }
+      }
+    ]
+  }
+}
